@@ -1,146 +1,118 @@
-public class RedBlackTree  {
+public class RedBlackTree {
+    private final Node NIL;
     private Node root;
-    private Node NIL;
+
     public RedBlackTree() {
-        this.root = null;
+        this.NIL = new Node();        // sentinel
+        this.NIL.setRed(false);
+        this.NIL.setLeftNode(NIL);
+        this.NIL.setRightNode(NIL);
+        this.NIL.setParent(NIL);
+
+        this.root = NIL;
+    }
+
+    public void inOrderTraversal() {
+        inOrder(this.root);
+    }
+
+    private void inOrder(Node root) {
+        if(root == NIL) {
+            return ;
+        }
+        inOrder(root.getLeftNode());
+        System.out.println(root.getData());
+        inOrder(root.getRightNode());
     }
 
     public void insert(int data) {
-        if(root == null) {
-            Node node = new Node(data);
-            node.setRed(false);
-            root = node;
-            NIL = new Node();
-            NIL.setRed(false);
-            return;
-        }
+        Node z = new Node(data);
+        z.setRed(true);
+        z.setLeftNode(NIL);
+        z.setRightNode(NIL);
 
-        Node node = new Node(data);
-        node.setRightNode(NIL);
-        node.setLeftNode(NIL);
-        node.setParent(null);
-        insertNode(data, node);
-        fixTree(node);
-    }
-
-    private void insertNode(int data, Node node) {
-//        전달받은 숫자로 노드 객체를 하나 생성
-        Node newNode;
-        newNode = new Node(data);
-        newNode.setRightNode(NIL);
-        newNode.setLeftNode(NIL);
-        newNode.setParent(null);
-//
-//		루트 노드를 저장할 변수가 비어있으면
-        if (root == null) {
-//			루트 노드를 저장할 변수에 방금 생성한 객체를 저장
-            root = newNode;
-        }
-//		그렇지 않으면
-        else {
-//			비교할 노드를 저장할 변수 생성
-            Node current;
-//			비교할 노드를 저장할 변수에 루트 노드를 저장
-            current = root;
-//			비교할 노드가 비어있지 않으면 반복
-            while (current != null) {
-//				만약에 전달받은 숫자가 비교할 노드의 숫자보다 작으면
-                if(data < current.getData()) {
-//					비교할 노드의 왼쪽 노드가 비어있으면
-                    if(current.getLeftNode() == null) {
-//						비교할 노드의 왼쪽 노드에 생성한 노드를 저장
-                        current.setLeftNode(newNode);
-                        newNode.setParent(current);
-//						반복문 중지
-                        break;
-                    }
-//					그렇지 않으면
-                    else {
-//						비교할 노드 변수에 현재 비교할 노드의 왼쪽 노드를 저장
-                        current = current.getLeftNode();
-                    }
-                }
-//				만약에 전달받은 숫자가 비교할 노드의 숫자보다 크면
-                else if(data > current.getData()) {
-//					비교할 노드의 오른쪽 노드가 비어있으면
-                    if(current.getRightNode() == null) {
-//						비교할 노드의 오른쪽 노드에 생성한 노드를 저장
-                        current.setRightNode(newNode);
-                        newNode.setParent(current);
-//						반복문 중지
-                        break;
-                    }
-//					그렇지 않으면
-                    else {
-//						비교할 노드 변수에 현재 비교할 노드의 오른쪽 노드를 저장
-                        current = current.getRightNode();
-                    }
-                }
+        // BST insert (NIL 기반)
+        Node y = NIL;
+        Node x = root;
+        while (x != NIL) {
+            y = x;
+            if (z.getData() < x.getData()) x = x.getLeft();
+            else if (z.getData() > x.getData()) x = x.getRight();
+            else {
+                // 중복 정책: 1) 무시 2) 오른쪽에만 삽입 등
+                // 여기서는 무시
+                return;
             }
         }
+        z.setParent(y);
+        if (y == NIL) {
+            root = z;
+        } else if (z.getData() < y.getData()) {
+            y.setLeftNode(z);
+        } else {
+            y.setRightNode(z);
+        }
 
-
+        fixInsert(z);
     }
-    private void fixTree(Node node) {
 
-        while (node.getParent() != null && node.getParent().isRed()) {
-            Node grandParentNode = node.getParent().getParent();
+    private void fixInsert(Node z) {
+        // 부모가 RED인 동안
+        while (z.getParent().isRed()) {
+            Node p = z.getParent();
+            Node g = p.getParent();
 
-            if(grandParentNode.getLeftNode() == node.getParent()){
-                Node uncle = grandParentNode.getRightNode();
-
-                //삼촌이 빨강일 경우 Recoloring
-                if(uncle.isRed()){
-                    uncle.setRed(false);
-                    node.getParent().setRed(false);
-                    grandParentNode.setRed(true);
-                    node = grandParentNode;
-                }else{
-                    //rotation
-                    if(node.getParent().getRightNode() == node){
-                        node = node.getParent();
-                        leftRotate(node);
+            if (p == g.getLeft()) {
+                Node u = g.getRight(); // uncle
+                if (u.isRed()) {
+                    // Case 1: recolor
+                    p.setRed(false);
+                    u.setRed(false);
+                    g.setRed(true);
+                    z = g;
+                } else {
+                    if (z == p.getRight()) {
+                        // Case 2: LR
+                        z = p;
+                        leftRotate(z);
                     }
-
-                    node.getParent().setRed(false);
-                    grandParentNode.setRed(true);
-                    rightRotate(grandParentNode);
+                    // Case 3: LL
+                    p.setRed(false);
+                    g.setRed(true);
+                    rightRotate(g);
                 }
             } else {
-
-                Node uncle = grandParentNode.getLeftNode();
-                if(uncle.isRed()){
-                    uncle.setRed(false);
-                    node.getParent().setRed(false);
-                    grandParentNode.setRed(true);
-                    node = grandParentNode;
-                }else{
-                    if(node.getParent().getLeftNode() == node){
-                        node = node.getParent();
-                        rightRotate(node);
+                Node u = g.getLeft();
+                if (u.isRed()) {
+                    // mirror Case 1
+                    p.setRed(false);
+                    u.setRed(false);
+                    g.setRed(true);
+                    z = g;
+                } else {
+                    if (z == p.getLeft()) {
+                        // mirror Case 2: RL
+                        z = p;
+                        rightRotate(z);
                     }
-
-                    node.getRight().setRed(false);
-                    grandParentNode.setRed(true);
-                    leftRotate(grandParentNode);
+                    // mirror Case 3: RR
+                    p.setRed(false);
+                    g.setRed(true);
+                    leftRotate(g);
                 }
             }
         }
         root.setRed(false);
+        root.setParent(NIL);
     }
 
-    // 좌회전
     private void leftRotate(Node x) {
         Node y = x.getRight();
         x.setRightNode(y.getLeft());
-
-        if (y.getLeft() != NIL) {
-            y.getLeft().setParent(x);
-        }
+        if (y.getLeft() != NIL) y.getLeft().setParent(x);
 
         y.setParent(x.getParent());
-
-        if (x.getParent() == null) {
+        if (x.getParent() == NIL) {
             root = y;
         } else if (x == x.getParent().getLeft()) {
             x.getParent().setLeftNode(y);
@@ -152,19 +124,13 @@ public class RedBlackTree  {
         x.setParent(y);
     }
 
-    // 우회전
     private void rightRotate(Node x) {
-        Node y = x.getLeftNode();
+        Node y = x.getLeft();
         x.setLeftNode(y.getRight());
-
-        if (y.getRightNode() != NIL) {
-            y.getRight().setParent(x);
-            y.getRightNode().setParent(x);
-        }
+        if (y.getRight() != NIL) y.getRight().setParent(x);
 
         y.setParent(x.getParent());
-
-        if (x.getParent() == null) {
+        if (x.getParent() == NIL) {
             root = y;
         } else if (x == x.getParent().getRight()) {
             x.getParent().setRightNode(y);
@@ -176,5 +142,16 @@ public class RedBlackTree  {
         x.setParent(y);
     }
 
+    public static void main(String[] args) {
+        RedBlackTree tree = new RedBlackTree();
 
+        tree.insert(10);
+        tree.insert(5);
+        tree.insert(1);
+        tree.insert(7);
+        tree.insert(40);
+        tree.insert(50);
+
+        tree.inOrderTraversal();
+    }
 }
